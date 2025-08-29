@@ -1,0 +1,9 @@
+export { default as UserDashboard } from './Dashboard.jsx';
+export { default as UserAccounts } from './Accounts.jsx';
+export { default as UserTransfers } from './Transfers.jsx';
+export { default as UserCards } from './Cards.jsx';
+export { default as UserLogin } from './Login.jsx';
+export { default as UserProfile } from './Profile.jsx';
+export { default as UserSignup } from './Signup.jsx';
+export { default as UserLoans } from './Loans.jsx';
+export { default as UserLoansApply } from './LoansApply.jsx';

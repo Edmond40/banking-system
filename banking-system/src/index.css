@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+.\/* Global viewport & overflow guards *\/
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Global button styling: add borders to all buttons (plain CSS version) */
+button {
+  border: 1px solid rgb(203 213 225); /* slate-300 */
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.375rem 0.75rem; /* py-1.5 px-3 */
+}
+button:hover {
+  border-color: rgb(148 163 184); /* slate-400 */
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.berkshire-swash-bold {
+  font-family: "Berkshire Swash", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.libertinus-serif-regular {
+  font-family: "Libertinus Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+  
+.libertinus-serif-medium {
+  font-family: "Libertinus Serif", serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+
+.active hr {
+  scale: 0;
+  transition: all 0.3s ease-in-out;
+}
+.active:hover hr {
+  scale: 1;
+}
+

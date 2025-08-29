@@ -1,0 +1,13 @@
+export { default as AdminDashboard } from './Dashboard.jsx';
+export { default as AdminCustomers } from './Customers.jsx';
+export { default as AdminAccounts } from './Accounts.jsx';
+export { default as AdminTransactions } from './Transactions.jsx';
+export { default as AdminSettings } from './Settings.jsx';
+export { default as AdminLogin } from './Login.jsx';
+export { default as AdminSignup } from './Signup.jsx';
+export { default as AdminUsersRoles } from './UsersRoles.jsx';
+export { default as AdminApprovals } from './Approvals.jsx';
+export { default as AdminReports } from './Reports.jsx';
+export { default as AdminAuditLogs } from './AuditLogs.jsx';
+export { default as AdminIntegrations } from './Integrations.jsx';
+export { default as AdminProfile } from './Profile.jsx';

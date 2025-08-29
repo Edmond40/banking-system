@@ -1,0 +1,279 @@
+// Prisma schema for PayWave backend (MySQL)
+// Run: npx prisma generate
+// Then: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================= Enums =========================
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum CustomerStatus {
+  ACTIVE
+  FROZEN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AccountType {
+  CURRENT
+  SAVINGS
+}
+
+enum AccountStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum TransactionKind {
+  DEPOSIT
+  WITHDRAW
+  TRANSFER_OWN
+  TRANSFER_INTRA
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum CardType {
+  PHYSICAL
+  VIRTUAL
+}
+
+enum CardStatus {
+  ACTIVE
+  FROZEN
+  INACTIVE
+}
+
+enum EmploymentStatus {
+  EMPLOYED
+  SELF_EMPLOYED
+  STUDENT
+  UNEMPLOYED
+}
+
+enum AdminRole {
+  OWNER
+  MANAGER
+  ANALYST
+  VIEWER
+}
+
+enum ApprovalType {
+  WITHDRAW
+  DEPOSIT
+  OTHER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+// ========================= Models =========================
+model User {
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  name         String
+  passwordHash String
+  role         UserRole       @default(CUSTOMER)
+  status       CustomerStatus @default(ACTIVE)
+  kycStatus    KycStatus      @default(PENDING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  accounts         Account[]
+  cards            Card[]
+  beneficiaries    Beneficiary[]
+  loanApplications LoanApplication[]
+}
+
+model Account {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  name      String
+  type      AccountType   @default(CURRENT)
+  number    String        @unique
+  balance   Decimal       @default(0.00) @db.Decimal(18, 2)
+  status    AccountStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
+  user              User              @relation(fields: [userId], references: [id])
+  transactions      Transaction[]     @relation("AccountTransactions")
+  incomingTransfers Transaction[]     @relation("ToAccountTransfers")
+  ApprovalRequest   ApprovalRequest[]
+
+  @@index([userId])
+}
+
+model Transaction {
+  id          Int               @id @default(autoincrement())
+  accountId   Int
+  toAccountId Int?
+  kind        TransactionKind
+  status      TransactionStatus @default(PENDING)
+  amount      Decimal           @db.Decimal(18, 2)
+  fee         Decimal?          @db.Decimal(18, 2)
+  currency    String            @default("USD")
+  note        String?           @db.VarChar(255)
+  // Intra-bank destination details (for external/intra)
+  toName      String?
+  toBank      String?
+  toAcct      String?
+
+  createdAt DateTime  @default(now())
+  decidedAt DateTime?
+
+  // Approved/declined by which admin (if any)
+  approvedById Int?
+
+  // Relations
+  account    Account    @relation("AccountTransactions", fields: [accountId], references: [id])
+  toAccount  Account?   @relation("ToAccountTransfers", fields: [toAccountId], references: [id])
+  approvedBy AdminUser? @relation(fields: [approvedById], references: [id])
+
+  @@index([accountId])
+  @@index([toAccountId])
+  @@index([approvedById])
+}
+
+model Beneficiary {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  name       String
+  bank       String
+  accountRef String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Card {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  type        CardType   @default(PHYSICAL)
+  label       String
+  last4       String     @db.Char(4)
+  expMonth    Int
+  expYear     Int
+  status      CardStatus @default(ACTIVE)
+  activated   Boolean    @default(false)
+  limitDaily  Decimal    @default(0.00) @db.Decimal(18, 2)
+  limitOnline Decimal    @default(0.00) @db.Decimal(18, 2)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// Generic approvals center (separate from Transaction approvals if you want extra flows)
+model ApprovalRequest {
+  id          Int            @id @default(autoincrement())
+  type        ApprovalType
+  accountId   Int?
+  amount      Decimal?       @db.Decimal(18, 2)
+  status      ApprovalStatus @default(PENDING)
+  createdAt   DateTime       @default(now())
+  decidedAt   DateTime?
+  decidedById Int?
+  note        String?
+
+  account   Account?   @relation(fields: [accountId], references: [id])
+  decidedBy AdminUser? @relation(fields: [decidedById], references: [id])
+
+  @@index([accountId])
+  @@index([decidedById])
+}
+
+model LoanApplication {
+  id          Int              @id @default(autoincrement())
+  userId      Int?
+  fullName    String
+  income      Decimal          @db.Decimal(18, 2)
+  employment  EmploymentStatus
+  purpose     String
+  amount      Decimal          @db.Decimal(18, 2)
+  annualRate  Decimal          @db.Decimal(5, 2)
+  months      Int
+  currency    String           @default("USD")
+  estMonthly  Decimal          @db.Decimal(18, 2)
+  estTotal    Decimal          @db.Decimal(18, 2)
+  estInterest Decimal          @db.Decimal(18, 2)
+  createdAt   DateTime         @default(now())
+
+  user        User?            @relation(fields: [userId], references: [id])
+  attachments LoanAttachment[]
+
+  @@index([userId])
+}
+
+model LoanAttachment {
+  id            Int      @id @default(autoincrement())
+  applicationId Int
+  name          String
+  sizeBytes     Int
+  mimeType      String
+  url           String
+  createdAt     DateTime @default(now())
+
+  application LoanApplication @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+model AdminUser {
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String?   @unique
+  passwordHash String
+  role      AdminRole @default(VIEWER)
+  createdAt DateTime  @default(now())
+
+  // reverse relations
+  approvedTransactions Transaction[]
+  ApprovalRequest      ApprovalRequest[]
+}
+
+// System-wide settings (single row)
+model AppSetting {
+  id                     Int      @id @default(1)
+  // Security
+  securityPasswordMinLen Int      @default(8)
+  securityRequireMFA     Boolean  @default(true)
+  securitySessionTimeout Int      @default(30) // minutes
+  // Approvals
+  approvalsDepositLimit  Decimal  @default(5000.00) @db.Decimal(18, 2)
+  approvalsWithdrawLimit Decimal  @default(3000.00) @db.Decimal(18, 2)
+  approvalsDualApproval  Boolean  @default(true)
+  // Notifications
+  notifEmail             Boolean  @default(true)
+  notifSms               Boolean  @default(false)
+  notifInApp             Boolean  @default(true)
+  updatedAt              DateTime @updatedAt
+}
